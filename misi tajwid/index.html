@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misi Tajwid - Aplikasi Gamifikasi Tajwid</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Amiri (Arab) & Plus Jakarta Sans (Teks Utama) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        amber: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            800: '#92400e',
+                            900: '#78350f',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        arabic: ['"Amiri"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#10b981 0.5px, transparent 0.5px), radial-gradient(#10b981 0.5px, #f8fafc 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        .islamic-pattern {
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2010b981' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .drop-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .drop-zone.drag-over {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+            transform: scale(1.02);
+        }
+
+        .draggable-item {
+            touch-action: none;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .selected-option {
+            box-shadow: 0 0 0 4px #10b981;
+            border-color: #059669 !important;
+            background-color: #ecfdf5 !important;
+        }
+
+        /* Shake animation for incorrect answer */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Glow animation for correct answer */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+        }
+        .animate-glow {
+            animation: glow 1s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between islamic-pattern">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-emerald-100 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showScreen('main-menu')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-200">
+                    📖
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg leading-tight text-emerald-900 tracking-tight">MISI TAJWID</h1>
+                    <p class="text-xs text-emerald-600 font-medium">Naqal, Silah & Ibdal</p>
+                </div>
+            </div>
+
+            <!-- Global Controls & Student Profile Badge -->
+            <div class="flex items-center space-x-3">
+                <!-- Profil Murid Quick Badge -->
+                <button onclick="openStudentModal()" class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-xl transition duration-200">
+                    <span id="global-avatar-icon" class="text-lg">🎓</span>
+                    <div class="text-left hidden sm:block">
+                        <p id="global-student-name" class="text-xs font-bold leading-tight">Murid Tajwid</p>
+                        <p id="global-student-class" class="text-[10px] text-emerald-600 leading-tight">Kelas: 5 Al-Farabi</p>
+                    </div>
+                    <i class="fas fa-edit text-xs text-emerald-500"></i>
+                </button>
+
+                <!-- Button Open Tajwid Shooter (index2.html) -->
+                <a href="index2.html" target="_self" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-200 flex items-center gap-1.5 transition duration-200">
+                    <span>🎯</span> <span class="hidden sm:inline">Tajwid Shooter</span>
+                </a>
+
+                <!-- Background Music Play/Pause Button -->
+                <button id="bgm-toggle-btn" onclick="toggleBGM()" class="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition duration-200 flex items-center gap-1" title="Muzik Latar (laguselamatdatang.mp3)">
+                    <i id="bgm-icon" class="fas fa-music text-lg"></i>
+                    <span id="bgm-text" class="text-[10px] font-bold text-slate-500 hidden md:inline">OFF</span>
+                </button>
+
+                <!-- Sound Effects Toggle Button -->
+                <button id="sound-toggle-btn" onclick="toggleAudio()" class="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition duration-200" title="Tetapan Audio Kesan Bunyi">
+                    <i id="sound-icon" class="fas fa-volume-up text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Audio Element untuk Lagu Selamat Datang -->
+    <audio id="bgm-audio" loop preload="auto">
+        <source src="laguselamatdatang.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-4xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- ================= MAIN MENU SCREEN ================= -->
+        <section id="screen-main-menu" class="space-y-8 animate-fade-in">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="relative z-10 max-w-xl">
+                    <span class="inline-block px-3 py-1 bg-emerald-500/30 backdrop-blur-md rounded-full text-xs font-semibold text-emerald-100 mb-3 border border-emerald-400/30">
+                        ✨ Mod Pembelajaran Interaktif Sekolah
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold mb-3 leading-tight">Terokai Ilmu Tajwid dengan Mudah & Seronok</h2>
+                    <p class="text-emerald-100 text-sm sm:text-base mb-6 font-normal">Fahami kaedah Naqal, Silah dan Ibdal mengikut Riwayat Hafs 'An 'Asim melalui nota komprehensif dan cabar diri dalam Kuiz Padanan.</p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="showScreen('nota')" class="px-6 py-3 rounded-xl bg-white text-emerald-800 font-bold hover:bg-emerald-50 transition shadow-lg text-sm sm:text-base flex items-center gap-2">
+                            <i class="fas fa-book-open"></i> Baca Nota Lengkap
+                        </button>
+                        <button onclick="startQuiz(1)" class="px-6 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition shadow-lg shadow-amber-500/20 text-sm sm:text-base flex items-center gap-2">
+                            <i class="fas fa-gamepad"></i> Mula Kuiz Tahap 1
+                        </button>
+                        <a href="index2.html" class="px-6 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-600/20 text-sm sm:text-base flex items-center gap-2">
+                            <span>🎯</span> Tajwid Shooter
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Statistik Murid -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div id="hero-avatar-circle" class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-bold shadow-inner">
+                        🎓
+                    </div>
+                    <div>
+                        <h4 id="hero-student-name" class="font-extrabold text-slate-800 text-base sm:text-lg">Nama Murid: <span>Murid Tajwid</span></h4>
+                        <p id="hero-student-class" class="text-xs text-slate-500">Kelas: <span>5 Al-Farabi</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 text-center">
+                    <div class="px-3 py-1 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <p class="text-[10px] uppercase font-bold text-emerald-600">Total XP</p>
+                        <p id="hero-student-xp" class="text-lg font-black text-emerald-800">0 XP</p>
+                    </div>
+                    <div class="px-3 py-1 bg-amber-50 rounded-xl border border-amber-100">
+                        <p class="text-[10px] uppercase font-bold text-amber-600">Lencana</p>
+                        <p id="hero-student-badge" class="text-sm font-black text-amber-800">Bintang Muda ⭐</p>
+                    </div>
+                    <button onclick="openStudentModal()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition">
+                        <i class="fas fa-user-edit mr-1"></i> Tukar Profil
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mod Selection Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Card 1: Nota -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-md hover:shadow-lg transition duration-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                            📚
+                        </div>
+                        <h3 class="font-bold text-lg text-slate-800 mb-1">Bahagian A: Nota Tajwid</h3>
+                        <p class="text-xs text-slate-500 mb-4">Nota terperinci mengikut PDF Naqal, Silah & Ibdal berserta jadual perbandingan & rujukan.</p>
+                    </div>
+                    <button onclick="showScreen('nota')" class="w-full py-2.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition text-sm">
+                        Buka Nota
+                    </button>
+                </div>
+
+                <!-- Card 2: Tahap 1 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-md hover:shadow-lg transition duration-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                            ⭐
+                        </div>
+                        <h3 class="font-bold text-lg text-slate-800 mb-1">Bahagian B: Kuiz Tahap 1</h3>
+                        <p class="text-xs text-slate-500 mb-4">10 soalan asas padanan istilah, takrifan & contoh lafaz ayat.</p>
+                    </div>
+                    <button onclick="startQuiz(1)" class="w-full py-2.5 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition text-sm shadow-sm">
+                        Mula Tahap 1
+                    </button>
+                </div>
+
+                <!-- Card 3: Tahap 2 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-md hover:shadow-lg transition duration-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-xl font-bold mb-4">
+                            🌟
+                        </div>
+                        <h3 class="font-bold text-lg text-slate-800 mb-1">Bahagian B: Kuiz Tahap 2</h3>
+                        <p class="text-xs text-slate-500 mb-4">10 soalan aplikasi mendalam, pengecualian khusus & syarat hukum.</p>
+                    </div>
+                    <button onclick="startQuiz(2)" class="w-full py-2.5 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition text-sm shadow-sm">
+                        Mula Tahap 2
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Leaderboard / Hall of Fame -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                        <span class="text-amber-500 text-xl">🏆</span> Carta Kedudukan Kelas (Leaderboard)
+                    </h3>
+                    <span class="text-xs text-slate-400">Pencapaian Murid Terbaik</span>
+                </div>
+                <div id="leaderboard-list" class="space-y-2">
+                    <!-- Dynamic Leaderboard Items -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= BAHAGIAN A: NOTA SCREEN ================= -->
+        <section id="screen-nota" class="hidden space-y-6">
+            <!-- Header Nota -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">📖 Bahagian A — Nota Tajwid Lengkap</h2>
+                    <p class="text-xs text-slate-500">Nota Naqal, Silah, Ibdal & Jadual Perbandingan (Riwayat Hafs 'An 'Asim).</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="showScreen('main-menu')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm hover:bg-slate-200 transition">
+                        <i class="fas fa-arrow-left mr-1"></i> Menu
+                    </button>
+                    <button onclick="startQuiz(1)" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition shadow-sm">
+                        Mula Kuiz <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs Topic -->
+            <div id="nota-topics-nav" class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <!-- Topics rendered via JS -->
+            </div>
+
+            <!-- Content Cards Nota -->
+            <div id="nota-content-container" class="space-y-6">
+                <!-- Active topic content rendered via JS -->
+            </div>
+        </section>
+
+
+        <!-- ================= BAHAGIAN B: KUIZ SCREEN ================= -->
+        <section id="screen-quiz" class="hidden space-y-5">
+            <!-- Header Status Kuiz -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <span id="quiz-level-badge" class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-xs uppercase tracking-wider">
+                        TAHAP 1
+                    </span>
+                    <h3 id="quiz-progress-text" class="text-xs sm:text-sm font-bold text-slate-500 mt-1">SOALAN 1 DARIPADA 10</h3>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+                        <span class="text-amber-500 text-base">⭐</span>
+                        <span id="quiz-score-display" class="font-extrabold text-amber-900 text-sm sm:text-base">0 mata</span>
+                    </div>
+                    <button onclick="confirmExitQuiz()" class="text-slate-400 hover:text-slate-600 p-2">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div id="quiz-progress-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 10%"></div>
+            </div>
+
+            <!-- Card Soalan utama -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-md space-y-6 text-center">
+                <p id="quiz-instruction" class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Padankan istilah dengan pengertiannya.</p>
+                
+                <!-- Prompt Soalan -->
+                <div class="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-6 min-h-[120px] flex items-center justify-center">
+                    <h2 id="quiz-question-text" class="text-lg sm:text-xl font-bold text-slate-800 leading-relaxed">
+                        Memindahkan harakat hamzah kepada huruf sebelumnya yang sukun.
+                    </h2>
+                </div>
+
+                <!-- Drop Zone Target -->
+                <div class="space-y-2">
+                    <p class="text-xs text-slate-400">Seret jawapan ke kotak di bawah atau ketik jawapan kemudian ketik kotak ini:</p>
+                    <div id="drop-zone" class="drop-zone border-2 border-dashed border-emerald-300 bg-emerald-50/20 rounded-2xl min-h-[70px] flex items-center justify-center p-3 text-emerald-700 font-bold transition-all cursor-pointer">
+                        <span id="drop-zone-placeholder" class="text-slate-400 font-medium text-sm">Lepaskan jawapan di sini</span>
+                    </div>
+                </div>
+
+                <!-- Feedback Toast Inside Card -->
+                <div id="quiz-feedback" class="hidden p-4 rounded-xl font-bold text-sm transition-all animate-fade-in">
+                    <!-- Dynamic feedback via JS -->
+                </div>
+
+                <!-- Options Grid -->
+                <div id="quiz-options-container" class="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
+                    <!-- Draggable Options via JS -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= KEPUTUSAN & KEMAJUAN SCREEN ================= -->
+        <section id="screen-results" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6">
+                <!-- Header Animasi Kemenangan -->
+                <div class="inline-flex p-4 rounded-full bg-emerald-100 text-emerald-600 text-4xl mb-2 animate-bounce">
+                    🏆
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Tahniah, <span id="res-student-name" class="text-emerald-700">Murid</span>!</h2>
+                <p id="result-subtitle" class="text-sm text-slate-500">Anda telah menyelesaikan semua 10 soalan padanan!</p>
+
+                <!-- Ringkasan Markah Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p class="text-xs text-slate-400 font-semibold mb-1">MARKAH</p>
+                        <p id="res-score" class="text-2xl font-black text-emerald-600">100</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p class="text-xs text-slate-400 font-semibold mb-1">BETUL</p>
+                        <p id="res-correct" class="text-2xl font-black text-slate-700">10 / 10</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p class="text-xs text-slate-400 font-semibold mb-1">PERCUBAAN</p>
+                        <p id="res-attempts" class="text-2xl font-black text-amber-600">12</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <p class="text-xs text-slate-400 font-semibold mb-1">PENGUASAAN</p>
+                        <p id="res-mastery" class="text-2xl font-black text-purple-600">100%</p>
+                    </div>
+                </div>
+
+                <!-- XP & Ganjaran Cadangan -->
+                <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 max-w-md mx-auto flex items-center justify-around">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">⚡</span>
+                        <div class="text-left">
+                            <p class="text-xs text-emerald-700 font-bold">XP Diperoleh</p>
+                            <p id="res-xp" class="text-lg font-black text-emerald-900">+150 XP</p>
+                        </div>
+                    </div>
+                    <div class="h-8 w-px bg-emerald-200"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🥇</span>
+                        <div class="text-left">
+                            <p class="text-xs text-emerald-700 font-bold">Pingat / Lencana</p>
+                            <p id="res-badge" class="text-sm font-bold text-emerald-900">Pakar Tajwid</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topik Perlu Ulang Kaji -->
+                <div id="review-topics-box" class="hidden text-left bg-amber-50 border border-amber-200 rounded-2xl p-4 max-w-lg mx-auto">
+                    <h4 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-amber-600"></i> Cadangan Ulang Kaji:
+                    </h4>
+                    <ul id="review-topics-list" class="list-disc list-inside text-xs sm:text-sm text-amber-900 space-y-1">
+                        <!-- Rendered dynamically -->
+                    </ul>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+                    <button onclick="showScreen('main-menu')" class="px-6 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition">
+                        <i class="fas fa-home mr-1"></i> Menu Utama
+                    </button>
+                    <button id="retry-level-btn" onclick="retryQuiz()" class="px-6 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition shadow-md">
+                        <i class="fas fa-redo mr-1"></i> Ulang Tahap Ini
+                    </button>
+                    <button id="next-level-btn" onclick="startQuiz(2)" class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition shadow-md">
+                        Tahap Seterusnya <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL PROFIL MURID SEKOLAH -->
+    <div id="student-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-5">
+            <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">
+                    🎓 Profil Murid Sekolah
+                </h3>
+                <button onclick="closeStudentModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Avatar</label>
+                    <div class="flex gap-2 justify-center py-2">
+                        <button onclick="selectAvatar('🎓')" class="avatar-btn p-2 rounded-xl text-2xl hover:bg-slate-100 transition">🎓</button>
+                        <button onclick="selectAvatar('👧')" class="avatar-btn p-2 rounded-xl text-2xl hover:bg-slate-100 transition">👧</button>
+                        <button onclick="selectAvatar('👦')" class="avatar-btn p-2 rounded-xl text-2xl hover:bg-slate-100 transition">👦</button>
+                        <button onclick="selectAvatar('⭐')" class="avatar-btn p-2 rounded-xl text-2xl hover:bg-slate-100 transition">⭐</button>
+                        <button onclick="selectAvatar('🦁')" class="avatar-btn p-2 rounded-xl text-2xl hover:bg-slate-100 transition">🦁</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="input-student-name" class="block text-xs font-bold text-slate-600 mb-1">Nama Murid</label>
+                    <input id="input-student-name" type="text" placeholder="Masukkan nama murid..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-sm font-semibold">
+                </div>
+                <div>
+                    <label for="input-student-class" class="block text-xs font-bold text-slate-600 mb-1">Kelas / Tingkatan</label>
+                    <input id="input-student-class" type="text" placeholder="Contoh: 5 Al-Farabi" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-sm font-semibold">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeStudentModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-slate-200 transition">Batal</button>
+                <button onclick="saveStudentProfile()" class="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition shadow-md">Simpan Profil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* =========================================================
+           GLOBAL STATE MANAGEMENT & NAVIGATION
+           ========================================================= */
+        let studentProfile = {
+            name: "Murid Tajwid",
+            class: "5 Al-Farabi",
+            avatar: "🎓",
+            totalXP: 0,
+            badge: "Bintang Muda ⭐"
+        };
+
+        let audioEnabled = true;
+        let isBgmPlaying = false;
+        let currentLevel = 1;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalAttempts = 0;
+        let correctAnswersCount = 0;
+        let selectedOptionText = null;
+        let hasAnsweredCurrentQuestion = false;
+        let wrongTopics = new Set();
+        let currentQuestions = [];
+
+        // Background Music Control (laguselamatdatang.mp3)
+        function toggleBGM() {
+            const audio = document.getElementById('bgm-audio');
+            const icon = document.getElementById('bgm-icon');
+            const bgmText = document.getElementById('bgm-text');
+
+            if (!audio) return;
+
+            if (isBgmPlaying) {
+                audio.pause();
+                isBgmPlaying = false;
+                if (icon) icon.className = 'fas fa-music text-lg text-slate-400';
+                if (bgmText) bgmText.innerText = 'OFF';
+            } else {
+                audio.play().then(() => {
+                    isBgmPlaying = true;
+                    if (icon) icon.className = 'fas fa-compact-disc text-lg text-emerald-600 fa-spin';
+                    if (bgmText) bgmText.innerText = 'ON';
+                }).catch(err => {
+                    console.warn("Autoplay audio tidak dibenarkan tanpa interaksi pengguna terlebih dahulu:", err);
+                });
+            }
+        }
+
+        // Audio Effects with Synthesizer / Web Audio Fallback with safe error guards
+        function playSynthesizedBeep(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.3);
+                } else {
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.2);
+                }
+            } catch(e) {
+                console.warn("Audio Context tidak dapat diaktifkan:", e);
+            }
+        }
+
+        // Audio Effects with Synthesizer / Web Audio Fallback so it never bugs out
+        function playSynthesizedBeep(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.3);
+                } else {
+                    osc.frequency.setValueAtTime(300, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.2);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (audioEnabled) {
+                icon.className = 'fas fa-volume-up text-lg text-emerald-600';
+            } else {
+                icon.className = 'fas fa-volume-mute text-lg text-slate-400';
+            }
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            playSynthesizedBeep(type);
+        }
+
+        function speakText(text) {
+            if (!audioEnabled) return;
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'ms-MY';
+                    utterance.rate = 0.95;
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {}
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('main > section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+
+            const target = document.getElementById(`screen-${screenId}`);
+            if (target) {
+                target.classList.remove('hidden');
+            }
+
+            if (screenId === 'nota') {
+                renderNotaTopics();
+            } else if (screenId === 'main-menu') {
+                updateStudentUI();
+                renderLeaderboard();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* =========================================================
+           STUDENT PROFILE & LEADERBOARD FEATURES
+           ========================================================= */
+        function updateStudentUI() {
+            document.getElementById('global-student-name').innerText = studentProfile.name;
+            document.getElementById('global-student-class').innerText = `Kelas: ${studentProfile.class}`;
+            document.getElementById('global-avatar-icon').innerText = studentProfile.avatar;
+
+            document.getElementById('hero-student-name').querySelector('span').innerText = studentProfile.name;
+            document.getElementById('hero-student-class').querySelector('span').innerText = studentProfile.class;
+            document.getElementById('hero-avatar-circle').innerText = studentProfile.avatar;
+            document.getElementById('hero-student-xp').innerText = `${studentProfile.totalXP} XP`;
+            document.getElementById('hero-student-badge').innerText = studentProfile.badge;
+        }
+
+        function openStudentModal() {
+            document.getElementById('input-student-name').value = studentProfile.name;
+            document.getElementById('input-student-class').value = studentProfile.class;
+            document.getElementById('student-modal').classList.remove('hidden');
+        }
+
+        function closeStudentModal() {
+            document.getElementById('student-modal').classList.add('hidden');
+        }
+
+        function selectAvatar(emoji) {
+            studentProfile.avatar = emoji;
+            document.querySelectorAll('.avatar-btn').forEach(btn => {
+                if(btn.innerText === emoji) {
+                    btn.classList.add('bg-emerald-200', 'ring-2', 'ring-emerald-500');
+                } else {
+                    btn.classList.remove('bg-emerald-200', 'ring-2', 'ring-emerald-500');
+                }
+            });
+        }
+
+        function saveStudentProfile() {
+            const nameInput = document.getElementById('input-student-name').value.trim();
+            const classInput = document.getElementById('input-student-class').value.trim();
+            if (nameInput) studentProfile.name = nameInput;
+            if (classInput) studentProfile.class = classInput;
+
+            updateStudentUI();
+            closeStudentModal();
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+
+            const dummyStudents = [
+                { name: studentProfile.name, class: studentProfile.class, avatar: studentProfile.avatar, xp: studentProfile.totalXP, isCurrent: true },
+                { name: "Siti Nurhaliza", class: "5 Al-Farabi", avatar: "👧", xp: 280, isCurrent: false },
+                { name: "Muhammad Amir", class: "5 Ibn Sina", avatar: "👦", xp: 220, isCurrent: false },
+                { name: "Nur Aisha", class: "5 Al-Farabi", avatar: "⭐", xp: 190, isCurrent: false }
+            ];
+
+            // Sort by XP descending
+            dummyStudents.sort((a, b) => b.xp - a.xp);
+
+            dummyStudents.forEach((st, idx) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-3 rounded-2xl border ${
+                    st.isCurrent ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/30' : 'bg-slate-50 border-slate-100'
+                }`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-extrabold text-xs w-5 text-center ${idx === 0 ? 'text-amber-500 text-sm' : 'text-slate-400'}">
+                            ${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}
+                        </span>
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-base shadow-sm">
+                            ${st.avatar}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${st.name} ${st.isCurrent ? '<span class="text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold ml-1">Saya</span>' : ''}</p>
+                            <p class="text-[10px] text-slate-400">Kelas: ${st.class}</p>
+                        </div>
+                    </div>
+                    <span class="font-extrabold text-xs text-emerald-700 bg-emerald-100/60 px-2.5 py-1 rounded-lg">${st.xp} XP</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+
+        /* =========================================================
+           DATA STRUCTURE: NOTA TAJWID (DOCX Full Text - UNTOUCHED)
+           ========================================================= */
+        const notaData = [
+            {
+                id: 'intro',
+                title: '📌 Panduan & Pengenalan',
+                badge: 'Panduan Asas',
+                sections: [
+                    {
+                        heading: 'Panduan Menggunakan Nota',
+                        content: 'Nota ini disusun daripada PDF "Nota Naqal Silah Ibdal2.pdf". Contoh ayat dan hukum dikekalkan pada topik yang sama. Bacaan al-Quran perlu dipelajari secara <b>talaqqi dan musyafahah</b> dengan guru yang berkelayakan; nota bertulis membantu ulang kaji tetapi tidak menggantikan latihan bacaan lisan.'
+                    },
+                    {
+                        heading: 'Peringatan Ketepatan Riwayat',
+                        content: 'Istilah dan contoh khusus dalam nota ini merujuk kepada <b>riwayat Hafs daripada Imam ‘Asim melalui Tariq al-Syatibiyyah</b>, sebagaimana dinyatakan dalam PDF.'
+                    }
+                ]
+            },
+            {
+                id: 'naqal',
+                title: '1. Naqal (النقل)',
+                badge: 'Pemindahan Baris',
+                definition: '<b>Dari segi bahasa:</b> Naqal bermaksud memindahkan atau mengalihkan sesuatu dari satu tempat ke tempat yang lain.<br><b>Dari segi istilah:</b> Naqal ialah memindahkan baris (harakat) hamzah kepada huruf sukun sebelumnya, kemudian menggugurkan bunyi hamzah tersebut dalam bacaan.',
+                conditions: 'Pindahkan baris hamzah kepada huruf sukun yang sebelumnya. Gugurkan bunyi hamzah selepas pemindahan baris. Baca lafaz mengikut kaedah khusus yang ditetapkan dalam riwayat; jangan gunakan kaedah ini pada semua pertemuan huruf sukun dengan hamzah.',
+                exampleArabic: 'بِئْسَ ٱلِاسْمُ',
+                exampleTranslation: 'Surah al-Hujurat 49:11 — Ketika menyambung bacaan daripada بِئْسَ kepada ٱلِاسْمُ, baris kasrah hamzah dipindahkan kepada huruf lam yang asalnya sukun, kemudian bunyi hamzah digugurkan.',
+                explanation: 'Apabila memulakan bacaan (ibtida’) pada lafaz ٱلِاسْمُ, terdapat dua wajah ibtida’ yang sah. Pelajar hendaklah merujuk guru al-Quran dan mushaf yang digunakan.'
+            },
+            {
+                id: 'silah',
+                title: '2. Silah (الصلة)',
+                badge: 'Ha Dhomir',
+                definition: '<b>Dari segi bahasa:</b> Silah bermaksud hubungan atau sambungan.<br><b>Dari segi istilah:</b> Silah ialah menyambungkan bunyi ha’ dhamir (هُ atau هِ), iaitu kata ganti nama diri ketiga lelaki tunggal (\'dia\' atau \'-nya\'), dengan bunyi wau mad atau ya mad ketika bacaan wasal mengikut syarat tertentu.',
+                sections: [
+                    {
+                        heading: '2.2 Mad Silah Qasirah (مد الصلة القصيرة)',
+                        content: 'Berlaku apabila ha’ dhamir berada antara huruf yang berbaris hidup dan tidak diikuti hamzah qat‘.<br>• <b>Syarat umum:</b> Ha’ dhamir diapit huruf berbaris hidup, tidak diikuti hamzah qat‘, dibaca secara wasal (sambung).<br>• <b>Kadar bacaan:</b> 2 harakat.<br>• <b>Contoh (Surah al-Ikhlas 112:4):</b> <span class="font-arabic text-lg text-emerald-800">وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌ</span> — Ha’ dhamir pada لَّهُۥ disambungkan bunyi wau mad 2 harakat kerana selepasnya huruf kaf.'
+                    },
+                    {
+                        heading: '2.3 Mad Silah Tawilah (مد الصلة الطويلة)',
+                        content: 'Berlaku apabila ha’ dhamir memenuhi syarat silah dan <b>diikuti hamzah qat‘</b> pada perkataan berikutnya.<br>• <b>Syarat umum:</b> Ha’ dhamir diapit huruf berbaris hidup, diikuti hamzah qat‘, dibaca secara wasal.<br>• <b>Kadar bacaan:</b> 4 atau 5 harakat mengikut Tariq al-Syatibiyyah.<br>• <b>Contoh (Surah al-Humazah 104:3):</b> <span class="font-arabic text-lg text-emerald-800">يَحْسَبُ أَنَّ مَالَهُۥٓ أَخْلَدَهُۥ</span> — Pada مَالَهُۥٓ ha’ dhamir diikuti hamzah qat‘ pada أَخْلَدَهُۥ.'
+                    },
+                    {
+                        heading: '2.4 Perbandingan Silah',
+                        table: `
+                            <div class="overflow-x-auto my-2">
+                                <table class="w-full text-xs text-left border border-slate-200">
+                                    <thead class="bg-emerald-100 text-emerald-900 font-bold">
+                                        <tr><th class="p-2 border">Aspek</th><th class="p-2 border">Mad Silah Qasirah</th><th class="p-2 border">Mad Silah Tawilah</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        <tr><td class="p-2 font-semibold bg-slate-50">Huruf Utama</td><td class="p-2">Ha’ dhamir</td><td class="p-2">Ha’ dhamir</td></tr>
+                                        <tr><td class="p-2 font-semibold bg-slate-50">Huruf Selepas Ha’</td><td class="p-2">Bukan hamzah qat‘</td><td class="p-2">Hamzah qat‘</td></tr>
+                                        <tr><td class="p-2 font-semibold bg-slate-50">Kadar Bacaan</td><td class="p-2">2 harakat</td><td class="p-2">4 atau 5 harakat</td></tr>
+                                        <tr><td class="p-2 font-semibold bg-slate-50">Keadaan</td><td class="p-2">Wasal (sambung)</td><td class="p-2">Wasal (sambung)</td></tr>
+                                        <tr><td class="p-2 font-semibold bg-slate-50">Ketika Waqaf</td><td class="p-2">Mad silah tidak diteruskan</td><td class="p-2">Mad silah tidak diteruskan</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        heading: '2.5 Pengecualian Khusus Riwayat Hafs',
+                        content: '• <span class="font-arabic font-bold text-emerald-900">فِيهِۦ مُهَانًا</span> (Surah al-Furqan 25:69): Ha’ dhamir dibaca dengan silah 2 harakat walaupun huruf sebelumnya sukun.<br>• <span class="font-arabic font-bold text-emerald-900">يَرْضَهُ لَكُمْ</span> (Surah al-Zumar 39:7): Tidak dibaca dengan silah walaupun kelihatan memenuhi syarat umum.'
+                    }
+                ]
+            },
+            {
+                id: 'ibdal',
+                title: '3. Ibdal (الإبدال)',
+                badge: 'Pertukaran Huruf',
+                definition: '<b>Dari segi bahasa:</b> Ibdal bermaksud menggantikan atau menukarkan sesuatu.<br><b>Dari segi istilah:</b> Ibdal ialah menggantikan sesuatu huruf dengan huruf lain dalam bacaan al-Quran berdasarkan kaedah qiraat yang sahih (Hamzah digantikan huruf Mad: Alif, Wau, atau Ya).',
+                sections: [
+                    {
+                        heading: '3.2 Prinsip Umum Penggantian Hamzah Sukun',
+                        table: `
+                            <div class="overflow-x-auto my-2">
+                                <table class="w-full text-xs text-left border border-slate-200">
+                                    <thead class="bg-emerald-100 text-emerald-900 font-bold">
+                                        <tr><th class="p-2 border">Baris Sebelum Hamzah Sukun</th><th class="p-2 border">Huruf Pengganti</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200">
+                                        <tr><td class="p-2 font-semibold">Fathah (َ)</td><td class="p-2 font-bold text-emerald-800">Alif mad (ا)</td></tr>
+                                        <tr><td class="p-2 font-semibold">Dhammah (ُ)</td><td class="p-2 font-bold text-emerald-800">Wau mad (و)</td></tr>
+                                        <tr><td class="p-2 font-semibold">Kasrah (ِ)</td><td class="p-2 font-bold text-emerald-800">Ya mad (ي)</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    },
+                    {
+                        heading: '3.3 Contoh Utama: Surah al-Ahqaf 46:4',
+                        content: 'Lafaz: <span class="font-arabic text-xl font-bold text-emerald-900">ٱئْتُونِي</span><br>Ketika <b>Ibtida’</b> (memulakan bacaan) pada ٱئْتُونِي, hamzah wasal dibaca kasrah. Hamzah qat‘ yang sukun selepasnya digantikan dengan ya mad, lalu menjadi <span class="font-arabic text-lg font-bold text-emerald-800">إِيتُونِي</span> (Ītūnī) dipanjangkan 2 harakat.'
+                    },
+                    {
+                        heading: '3.4 Perbezaan Ibtida’ & Wasal',
+                        content: '• <b>Ibtida’:</b> Hamzah wasal dibaca kasrah dan hamzah qat‘ sukun digantikan dengan ya mad.<br>• <b>Wasal:</b> Hamzah wasal gugur apabila disambungkan.<br><i>*Mengapa kasrah? Dhammah pada huruf ketiga (تُ) dianggap baris mendatang (\'aridh), maka hamzah wasal dibaca kasrah ketika ibtida\'.</i>'
+                    },
+                    {
+                        heading: '3.5 Hubungan dengan Mad Badal',
+                        content: 'Contoh Mad Badal ialah <span class="font-arabic font-bold text-emerald-900">ءَامَنُوا</span> (asalnya dua hamzah, hamzah kedua ditukar alif mad dibaca 2 harakat dalam riwayat Hafs).'
+                    }
+                ]
+            },
+            {
+                id: 'perbandingan',
+                title: '4. Perbandingan Naqal, Silah & Ibdal',
+                badge: 'Ringkasan Hukum',
+                sections: [
+                    {
+                        heading: 'Jadual Perbandingan Keseluruhan',
+                        table: `
+                            <div class="overflow-x-auto my-2">
+                                <table class="w-full text-xs text-left border border-slate-200">
+                                    <thead class="bg-emerald-600 text-white font-bold">
+                                        <tr>
+                                            <th class="p-2 border">Aspek</th>
+                                            <th class="p-2 border">Naqal</th>
+                                            <th class="p-2 border">Silah</th>
+                                            <th class="p-2 border">Ibdal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 bg-white">
+                                        <tr><td class="p-2 font-bold bg-slate-50">Maksud</td><td class="p-2">Memindahkan baris hamzah</td><td class="p-2">Menyambungkan bunyi ha’ dhamir</td><td class="p-2">Menggantikan huruf</td></tr>
+                                        <tr><td class="p-2 font-bold bg-slate-50">Huruf Terlibat</td><td class="p-2">Hamzah & huruf sukun sebelum</td><td class="p-2">Ha’ dhamir</td><td class="p-2">Hamzah & huruf pengganti</td></tr>
+                                        <tr><td class="p-2 font-bold bg-slate-50">Kaedah</td><td class="p-2">Baris dipindah, bunyi hamzah gugur</td><td class="p-2">Bunyi wau/ya mad disambungkan</td><td class="p-2">Hamzah diganti huruf mad</td></tr>
+                                        <tr><td class="p-2 font-bold bg-slate-50">Contoh Nota</td><td class="p-2 font-arabic font-bold">ٱلِاسْمُ</td><td class="p-2 font-arabic font-bold">لَّهُۥ</td><td class="p-2 font-arabic font-bold">ٱئْتُونِي</td></tr>
+                                        <tr><td class="p-2 font-bold bg-slate-50">Kadar Mad</td><td class="p-2">Bukan hukum mad umum</td><td class="p-2">2 atau 4/5 harakat</td><td class="p-2">2 harakat (contoh al-Ahqaf)</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        `
+                    }
+                ]
+            },
+            {
+                id: 'kepentingan',
+                title: '5. Kepentingan & Rujukan',
+                badge: 'Penutup',
+                sections: [
+                    {
+                        heading: 'Kepentingan Mempelajari Hukum',
+                        content: 'Penguasaan Naqal, Silah dan Ibdal membantu pembaca membaca al-Quran mengikut kaedah riwayat yang sahih, menyebut hamzah dan ha’ dhamir dengan betul, serta membezakan pemindahan baris, penyambungan bunyi dan penggantian huruf.<br><br><b>Talaqqi dan musyafahah</b> dengan guru al-Quran yang berkelayakan amat penting kerana sesetengah hukum mempunyai wajah bacaan khusus yang tidak dapat dikuasai melalui nota bertulis sahaja.'
+                    },
+                    {
+                        heading: 'Rujukan Semakan',
+                        content: '• Nota PDF: <i>"Nota Naqal Silah Ibdal2.pdf"</i><br>• Surah al-Hujurat 49:11; al-Ikhlas 112:4; al-Humazah 104:3; al-Furqan 25:69; al-Zumar 39:7; al-Ahqaf 46:4.<br>• Islamweb & Quran.com (Riwayat Hafs \'An \'Asim Tariq al-Syatibiyyah).'
+                    }
+                ]
+            }
+        ];
+
+
+        /* =========================================================
+           DATA STRUCTURE: QUESTION SETS (Tahap 1 & Tahap 2)
+           ========================================================= */
+        const questionsLevel1 = [
+            {
+                id: 1,
+                instruction: "Padankan potongan ayat dengan jenis mad yang betul.",
+                question: "Apakah jenis mad bagi potongan ayat لَّهُۥ كُفُوًا?",
+                correctAnswer: "Mad Silah Qasirah",
+                options: [
+                    "Mad Silah Qasirah",
+                    "Mad Silah Tawilah",
+                    "Mad Jaiz Munfasil",
+                    "Mad Aridh Lissukun"
+                ],
+                explanation: "Lafaz (لَّهُۥ كُفُوًا) merupakan Mad Silah Qasirah kerana ha' dhamir diapit huruf berbaris dan tidak diikuti hamzah qat'.",
+                topicId: "silah"
+            },
+            {
+                id: 2,
+                instruction: "Padankan potongan ayat dengan jenis mad yang betul.",
+                question: "Apakah jenis mad bagi potongan ayat مَالَهُۥٓ أَخْلَدَهُۥ?",
+                correctAnswer: "Mad Silah Tawilah",
+                options: [
+                    "Mad Silah Tawilah",
+                    "Mad Silah Qasirah",
+                    "Mad Wajib Muttasil",
+                    "Mad Badal"
+                ],
+                explanation: "Lafaz (مَالَهُۥٓ أَخْلَدَهُۥ) merupakan Mad Silah Tawilah kerana ha' dhamir diikuti oleh hamzah qat'.",
+                topicId: "silah"
+            },
+            {
+                id: 3,
+                instruction: "Padankan potongan ayat dengan jenis mad yang betul.",
+                question: "Apakah jenis mad bagi potongan ayat لَهُۥ مَا فِي السَّمَاوَاتِ?",
+                correctAnswer: "Mad Silah Qasirah, jika ha’ dhamir memenuhi syarat bacaan",
+                options: [
+                    "Mad Silah Qasirah, jika ha’ dhamir memenuhi syarat bacaan",
+                    "Mad Silah Tawilah secara mutlak",
+                    "Mad Badal",
+                    "Naqal"
+                ],
+                explanation: "Ia dibaca Mad Silah Qasirah apabila ha’ dhamir memenuhi syarat bacaan iaitu diapit dua huruf berbaris hidup.",
+                topicId: "silah"
+            },
+            {
+                id: 4,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Berapakah harakat Mad Silah Qasirah?",
+                correctAnswer: "2 harakat.",
+                options: ["2 harakat.", "4 atau 5 harakat.", "6 harakat.", "1 harakat."],
+                explanation: "Mad Silah Qasirah dibaca secara tetap dengan kadar 2 harakat ketika wasal.",
+                topicId: "silah"
+            },
+            {
+                id: 5,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Berapakah harakat Mad Silah Tawilah?",
+                correctAnswer: "4 atau 5 harakat.",
+                options: ["4 atau 5 harakat.", "2 harakat.", "6 harakat.", "3 harakat."],
+                explanation: "Mad Silah Tawilah dibaca 4 atau 5 harakat mengikut Tariq al-Syatibiyyah apabila diikuti hamzah qat'.",
+                topicId: "silah"
+            },
+            {
+                id: 6,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Apakah huruf yang terlibat dalam hukum Silah?",
+                correctAnswer: "Ha’ dhamir (هُ / هِ).",
+                options: ["Ha’ dhamir (هُ / هِ).", "Hamzah Wasal (ٱ).", "Nun Sakinah (نْ).", "Mim Sakinah (مْ)."],
+                explanation: "Hukum Silah khusus melibatkan ha’ dhamir iaitu kata ganti nama diri ketiga lelaki tunggal.",
+                topicId: "silah"
+            },
+            {
+                id: 7,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Bilakah kita tidak membaca Silah?",
+                correctAnswer: "Ketika berhenti (waqaf) pada ha’ dhamir.",
+                options: [
+                    "Ketika berhenti (waqaf) pada ha’ dhamir.",
+                    "Ketika membaca secara wasal (sambung).",
+                    "Ketika ha' dhamir berada di tengah ayat.",
+                    "Ketika bertemu dengan huruf kasrah."
+                ],
+                explanation: "Mad Silah hanya dibaca ketika Wasal (sambung). Apabila berhenti (waqaf), ha' dhamir dibaca sukun tanpa mad.",
+                topicId: "silah"
+            },
+            {
+                id: 8,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Apakah contoh Naqal dalam nota?",
+                correctAnswer: "Kalimah ٱلِاسْمُ dalam Surah al-Hujurat ayat 11.",
+                options: [
+                    "Kalimah ٱلِاسْمُ dalam Surah al-Hujurat ayat 11.",
+                    "لَّهُۥ dalam Surah al-Ikhlas ayat 4.",
+                    "ٱئْتُونِي dalam Surah al-Ahqaf ayat 4.",
+                    "فِيهِۦ مُهَانًا dalam Surah al-Furqan."
+                ],
+                explanation: "Contoh Naqal utama dalam nota ialah kalimah (بِئْسَ ٱلِاسْمُ) dalam Surah al-Hujurat 49:11.",
+                topicId: "naqal"
+            },
+            {
+                id: 9,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Apakah contoh ha’ dhamir yang dibaca dengan Mad Silah Qasirah?",
+                correctAnswer: "لَّهُۥ dalam Surah al-Ikhlas ayat 4.",
+                options: [
+                    "لَّهُۥ dalam Surah al-Ikhlas ayat 4.",
+                    "مَالَهُۥٓ أَخْلَدَهُۥ dalam Surah al-Humazah.",
+                    "ٱلِاسْمُ dalam Surah al-Hujurat ayat 11.",
+                    "ٱئْتُونِي dalam Surah al-Ahqaf ayat 4."
+                ],
+                explanation: "Lafaz (وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌ) dalam Surah al-Ikhlas 112:4 adalah contoh Mad Silah Qasirah (2 harakat).",
+                topicId: "silah"
+            },
+            {
+                id: 10,
+                instruction: "Padankan soalan dengan jawapan yang betul.",
+                question: "Apakah contoh kalimah Ibdal dalam nota?",
+                correctAnswer: "ٱئْتُونِي dalam Surah al-Ahqaf ayat 4.",
+                options: [
+                    "ٱئْتُونِي dalam Surah al-Ahqaf ayat 4.",
+                    "ٱلِاسْمُ dalam Surah al-Hujurat ayat 11.",
+                    "لَّهُۥ dalam Surah al-Ikhlas ayat 4.",
+                    "يَرْضَهُ لَكُمْ dalam Surah al-Zumar."
+                ],
+                explanation: "Contoh Ibdal ketika Ibtida' (memulakan bacaan) ialah kalimah (ٱئْتُونِي) yang dibaca (إِيتُونِي) dalam Surah al-Ahqaf 46:4.",
+                topicId: "ibdal"
+            }
+        ];
+
+        const questionsLevel2 = [
+            {
+                id: 1,
+                instruction: "Analisis syarat umum hukum.",
+                question: "Manakah syarat UTAMA bagi Mad Silah Qasirah?",
+                correctAnswer: "Diapit huruf berbaris & tidak diikuti hamzah qat‘",
+                options: ["Diapit huruf berbaris & tidak diikuti hamzah qat‘", "Didahului oleh huruf sukun", "Diikuti oleh hamzah qat' sahaja", "Dibaca secara waqaf sahaja"],
+                explanation: "Mad Silah Qasirah memerlukan ha' dhamir diapit dua huruf berbaris dan huruf selepasnya bukan hamzah qat'.",
+                topicId: "silah"
+            },
+            {
+                id: 2,
+                instruction: "Analisis pengecualian khusus Hafs.",
+                question: "Mengapakah lafaz (فِيهِۦ مُهَانًا) dalam Surah al-Furqan 25:69 menjadi pengecualian khusus?",
+                correctAnswer: "Dibaca Silah 2 harakat walaupun huruf sebelumnya sukun",
+                options: ["Dibaca Silah 2 harakat walaupun huruf sebelumnya sukun", "Tidak dibaca silah langsung", "Dibaca 6 harakat", "Baris kasrah dipindahkan ke huruf wau"],
+                explanation: "Ini adalah ketetapan khusus riwayat Hafs yang dibaca silah 2 harakat walaupun didahului sukun.",
+                topicId: "silah"
+            },
+            {
+                id: 3,
+                instruction: "Analisis pengecualian khusus Hafs.",
+                question: "Apakah kaedah bacaan bagi lafaz (يَرْضَهُ لَكُمْ) dalam Surah al-Zumar 39:7?",
+                correctAnswer: "Tidak dibaca dengan Silah",
+                options: ["Tidak dibaca dengan Silah", "Dibaca Silah Tawilah 4 harakat", "Dibaca Naqal", "Dibaca Ibdal 2 harakat"],
+                explanation: "Lafaz 'Yardhahulakum' tidak dibaca dengan silah mengikut ketetapan khusus riwayat Hafs.",
+                topicId: "silah"
+            },
+            {
+                id: 4,
+                instruction: "Analisis kaedah Ibtida' vs Wasal.",
+                question: "Apakah yang berlaku kepada hamzah wasal pada lafaz (ٱئْتُونِي) ketika WASAL (sambung)?",
+                correctAnswer: "Hamzah wasal gugur",
+                options: ["Hamzah wasal gugur", "Ditukar menjadi Wau mad", "Dipindahkan baris kasrah", "Dibaca panjang 4 harakat"],
+                explanation: "Ketika wasal, hamzah wasal gugur dan bacaan diteruskan mengikut hukum sambungan.",
+                topicId: "ibdal"
+            },
+            {
+                id: 5,
+                instruction: "Analisis prinsip penggantian huruf.",
+                question: "Jika baris sebelum hamzah sukun ialah Dhammah (ُ), hamzah digantikan dengan...",
+                correctAnswer: "Wau Mad (و)",
+                options: ["Wau Mad (و)", "Alif Mad (ا)", "Ya Mad (ي)", "Kasrah (ِ)"],
+                explanation: "Baris dhammah digantikan dengan wau mad yang sepadan dengannya.",
+                topicId: "ibdal"
+            },
+            {
+                id: 6,
+                instruction: "Analisis sebab baris hamzah wasal.",
+                question: "Mengapakah hamzah wasal dibaca KASRAH semasa ibtida' pada (ٱئْتُونِي)?",
+                correctAnswer: "Baris dhammah pada huruf ketiga dianggap baris mendatang ('Aridh)",
+                options: ["Baris dhammah pada huruf ketiga dianggap baris mendatang ('Aridh)", "Kerana huruf pertama berbaris fathah", "Kerana huruf kedua sukun", "Mengikut kaedah naqal umum"],
+                explanation: "Dhammah pada huruf Ta' (تُ) adalah baris mendatang, maka hamzah wasal dikekalkan bacaan kasrah.",
+                topicId: "ibdal"
+            },
+            {
+                id: 7,
+                instruction: "Analisis keadaan Waqaf bagi Silah.",
+                question: "Apakah yang berlaku kepada Mad Silah (Qasirah & Tawilah) ketika WAQAF (berhenti)?",
+                correctAnswer: "Mad Silah tidak diteruskan",
+                options: ["Mad Silah tidak diteruskan", "Kadar mad bertambah 6 harakat", "Ditukar menjadi Naqal", "Ha' dhamir digugurkan"],
+                explanation: "Mad Silah hanya berlaku ketika Wasal (sambung). Ketika Waqaf, ia dibaca sukun tanpa mad.",
+                topicId: "silah"
+            },
+            {
+                id: 8,
+                instruction: "Analisis perkaitan hukum.",
+                question: "Apakah contoh Mad Badal yang terhasil daripada penukaran hamzah kedua menjadi alif mad?",
+                correctAnswer: "ءَامَنُوا",
+                options: ["ءَامَنُوا", "ٱلِاسْمُ", "لَّهُۥ", "فِيهِۦ"],
+                explanation: "Lafaz 'Aamanu' asalnya dua hamzah, hamzah kedua ditukar menjadi alif mad (Mad Badal 2 harakat).",
+                topicId: "ibdal"
+            },
+            {
+                id: 9,
+                instruction: "Analisis kepentingan Talaqqi.",
+                question: "Mengapakah pembelajaran Naqal, Silah & Ibdal PERLU melalui Talaqqi & Musyafahah?",
+                correctAnswer: "Terdapat wajah bacaan khusus yang tidak dapat dikuasai nota bertulis sahaja",
+                options: ["Terdapat wajah bacaan khusus yang tidak dapat dikuasai nota bertulis sahaja", "Kerana nota tidak mempunyai contoh ayat", "Kerana hukum tajwid selalu berubah", "Supaya boleh menghafal maksud bahasa"],
+                explanation: "Sebutan sebenar dan wajah bacaan khusus memerlukan pengesahan lisan daripada guru al-Quran.",
+                topicId: "intro"
+            },
+            {
+                id: 10,
+                instruction: "Analisis perbandingan hukum.",
+                question: "Manakah hukum yang memindahkan baris dan MENGGUGURKAN bunyi hamzah?",
+                correctAnswer: "Naqal",
+                options: ["Naqal", "Silah", "Ibdal", "Mad Badal"],
+                explanation: "Naqal adalah satu-satunya hukum yang memindahkan baris dan menggugurkan bunyi fizikal hamzah.",
+                topicId: "naqal"
+            }
+        ];
+
+
+        /* =========================================================
+           RENDER BAHAGIAN NOTA
+           ========================================================= */
+        function renderNotaTopics() {
+            const navContainer = document.getElementById('nota-topics-nav');
+            const contentContainer = document.getElementById('nota-content-container');
+
+            navContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+
+            notaData.forEach((topic, idx) => {
+                // Nav buttons
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition duration-200 border ${
+                    idx === 0 
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`;
+                btn.innerText = topic.title;
+                btn.onclick = () => {
+                    Array.from(navContainer.children).forEach(c => {
+                        c.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition duration-200 border bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                    });
+                    btn.className = 'px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition duration-200 border bg-emerald-600 text-white border-emerald-600 shadow-sm';
+                    
+                    document.querySelectorAll('.nota-card').forEach(card => card.classList.add('hidden'));
+                    document.getElementById(`nota-card-${topic.id}`).classList.remove('hidden');
+                };
+                navContainer.appendChild(btn);
+
+                // Content Cards
+                const card = document.createElement('div');
+                card.id = `nota-card-${topic.id}`;
+                card.className = `nota-card bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6 ${idx !== 0 ? 'hidden' : ''}`;
+                
+                let innerHTMLContent = `
+                    <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
+                        <h3 class="text-xl sm:text-2xl font-extrabold text-emerald-900">${topic.title}</h3>
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-100">${topic.badge || 'Nota Tajwid'}</span>
+                    </div>
+                `;
+
+                if (topic.definition) {
+                    innerHTMLContent += `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">📖 Pengertian (Bahasa & Istilah)</h4>
+                                    <p class="text-slate-800 text-sm leading-relaxed">${topic.definition}</p>
+                                </div>
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">📋 Syarat & Cara Bacaan</h4>
+                                    <p class="text-slate-800 text-sm leading-relaxed">${topic.conditions}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                ${topic.exampleArabic ? `
+                                <div class="bg-emerald-50/70 p-5 rounded-2xl border border-emerald-100 text-center space-y-2">
+                                    <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Contoh Al-Quran</h4>
+                                    <p class="font-arabic text-2xl sm:text-3xl text-emerald-900 leading-loose py-1">${topic.exampleArabic}</p>
+                                    <p class="text-xs text-emerald-700 font-medium italic">${topic.exampleTranslation}</p>
+                                </div>` : ''}
+                                ${topic.explanation ? `
+                                <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200/60 text-xs text-amber-900 flex items-start gap-2">
+                                    <i class="fas fa-info-circle text-amber-600 text-base mt-0.5"></i>
+                                    <div><span class="font-bold">Nota Tambahan:</span> ${topic.explanation}</div>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (topic.sections && topic.sections.length > 0) {
+                    innerHTMLContent += `<div class="space-y-4">`;
+                    topic.sections.forEach(sec => {
+                        innerHTMLContent += `
+                            <div class="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-100 space-y-2">
+                                <h4 class="text-sm font-bold text-emerald-900">${sec.heading}</h4>
+                                ${sec.content ? `<div class="text-xs sm:text-sm text-slate-700 leading-relaxed">${sec.content}</div>` : ''}
+                                ${sec.table ? sec.table : ''}
+                            </div>
+                        `;
+                    });
+                    innerHTMLContent += `</div>`;
+                }
+
+                card.innerHTML = innerHTMLContent;
+                contentContainer.appendChild(card);
+            });
+        }
+
+
+        /* =========================================================
+           KUIZ LOGIC (Drag & Drop + Touch + Click Selection)
+           ========================================================= */
+        function startQuiz(level) {
+            currentLevel = level;
+            currentQuestions = level === 1 ? [...questionsLevel1] : [...questionsLevel2];
+            
+            // Shuffle questions order for dynamic play
+            currentQuestions.sort(() => 0.5 - Math.random());
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            totalAttempts = 0;
+            correctAnswersCount = 0;
+            wrongTopics.clear();
+            selectedOptionText = null;
+
+            document.getElementById('quiz-level-badge').innerText = `TAHAP ${level}`;
+            document.getElementById('quiz-level-badge').className = level === 1 
+                ? 'px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-xs uppercase tracking-wider'
+                : 'px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-bold text-xs uppercase tracking-wider';
+
+            showScreen('quiz');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            hasAnsweredCurrentQuestion = false;
+            selectedOptionText = null;
+            
+            const q = currentQuestions[currentQuestionIndex];
+
+            // Update Header Stats
+            document.getElementById('quiz-progress-text').innerText = `SOALAN ${currentQuestionIndex + 1} DARIPADA 10`;
+            document.getElementById('quiz-score-display').innerText = `${score} mata`;
+            document.getElementById('quiz-progress-bar').style.width = `${((currentQuestionIndex + 1) / 10) * 100}%`;
+
+            // Question Elements
+            document.getElementById('quiz-instruction').innerText = q.instruction || "Padankan istilah dengan pengertiannya.";
+            document.getElementById('quiz-question-text').innerText = q.question;
+
+            // Reset Feedback Box
+            const feedbackBox = document.getElementById('quiz-feedback');
+            feedbackBox.className = 'hidden p-4 rounded-xl font-bold text-sm transition-all animate-fade-in';
+            feedbackBox.innerHTML = '';
+
+            // Reset Drop Zone
+            const dropZone = document.getElementById('drop-zone');
+            dropZone.className = 'drop-zone border-2 border-dashed border-emerald-300 bg-emerald-50/20 rounded-2xl min-h-[70px] flex items-center justify-center p-3 text-emerald-700 font-bold transition-all cursor-pointer';
+            dropZone.innerHTML = `<span id="drop-zone-placeholder" class="text-slate-400 font-medium text-sm">Lepaskan jawapan di sini</span>`;
+
+            // Setup Options
+            const optionsContainer = document.getElementById('quiz-options-container');
+            optionsContainer.innerHTML = '';
+
+            const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
+
+            shuffledOptions.forEach((optText) => {
+                const optBtn = document.createElement('div');
+                optBtn.setAttribute('draggable', 'true');
+                optBtn.dataset.value = optText;
+                optBtn.className = 'draggable-item bg-white border-2 border-slate-200 hover:border-emerald-400 rounded-xl p-4 text-center font-bold text-slate-700 shadow-sm cursor-grab active:cursor-grabbing transition duration-200 select-none flex items-center justify-center';
+                optBtn.innerText = optText;
+
+                // Drag Events (Mouse)
+                optBtn.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', optText);
+                    optBtn.classList.add('opacity-50');
+                });
+
+                optBtn.addEventListener('dragend', () => {
+                    optBtn.classList.remove('opacity-50');
+                });
+
+                // Touch support for drag and tap
+                optBtn.addEventListener('touchstart', (e) => {
+                    if (hasAnsweredCurrentQuestion) return;
+                    Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected-option'));
+                    selectedOptionText = optText;
+                    optBtn.classList.add('selected-option');
+                    playSound('incorrect');
+                }, { passive: true });
+
+                // Click / Tap Selection Alternative
+                optBtn.addEventListener('click', () => {
+                    if (hasAnsweredCurrentQuestion) return;
+
+                    Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected-option'));
+
+                    selectedOptionText = optText;
+                    optBtn.classList.add('selected-option');
+                    
+                    playSound('incorrect');
+                });
+
+                optionsContainer.appendChild(optBtn);
+            });
+
+            setupDropZoneListeners();
+        }
+
+        function setupDropZoneListeners() {
+            const dropZone = document.getElementById('drop-zone');
+
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            };
+
+            dropZone.ondragleave = () => {
+                dropZone.classList.remove('drag-over');
+            };
+
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                if (hasAnsweredCurrentQuestion) return;
+
+                const droppedAnswer = e.dataTransfer.getData('text/plain');
+                if (droppedAnswer) {
+                    processAnswer(droppedAnswer);
+                }
+            };
+
+            dropZone.onclick = () => {
+                if (hasAnsweredCurrentQuestion) return;
+                if (selectedOptionText) {
+                    processAnswer(selectedOptionText);
+                }
+            };
+        }
+
+        function processAnswer(userAnswer) {
+            if (hasAnsweredCurrentQuestion) return;
+
+            totalAttempts++;
+
+            const q = currentQuestions[currentQuestionIndex];
+            const dropZone = document.getElementById('drop-zone');
+            const feedbackBox = document.getElementById('quiz-feedback');
+
+            dropZone.innerHTML = `<span class="text-emerald-900 font-extrabold text-base sm:text-lg">${userAnswer}</span>`;
+
+            if (userAnswer === q.correctAnswer) {
+                // Jawapan Betul
+                hasAnsweredCurrentQuestion = true;
+                correctAnswersCount++;
+                score += (currentLevel === 1 ? 10 : 15);
+                document.getElementById('quiz-score-display').innerText = `${score} mata`;
+
+                dropZone.className = 'drop-zone border-2 border-emerald-500 bg-emerald-100/80 rounded-2xl min-h-[70px] flex items-center justify-center p-3 text-emerald-800 font-bold animate-glow';
+                
+                feedbackBox.className = 'p-4 rounded-xl font-bold text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 block animate-fade-in space-y-1';
+                feedbackBox.innerHTML = `
+                    <p class="text-emerald-700 text-base">✨ Tahniah, ${studentProfile.name}! Jawapan anda betul!</p>
+                    <p class="text-xs font-normal text-emerald-900">${q.explanation}</p>
+                `;
+
+                playSound('correct');
+                speakText("Tahniah! Jawapan anda betul!");
+
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < 10) {
+                        loadQuestion();
+                    } else {
+                        showResultsScreen();
+                    }
+                }, 2200);
+
+            } else {
+                // Jawapan Salah
+                wrongTopics.add(q.topicId);
+                playSound('incorrect');
+
+                dropZone.className = 'drop-zone border-2 border-rose-400 bg-rose-50 rounded-2xl min-h-[70px] flex items-center justify-center p-3 text-rose-700 font-bold animate-shake';
+                
+                feedbackBox.className = 'p-4 rounded-xl font-bold text-sm bg-rose-50 text-rose-700 border border-rose-200 block animate-fade-in';
+                feedbackBox.innerHTML = `
+                    <p> Belum tepat, cuba lagi!</p>
+                    <p class="text-xs font-normal text-rose-600 mt-1">Sila seret atau ketik jawapan yang lain.</p>
+                `;
+
+                setTimeout(() => {
+                    dropZone.classList.remove('animate-shake');
+                }, 500);
+            }
+        }
+
+        function confirmExitQuiz() {
+            if (confirm("Adakah anda pasti mahu keluar dari kuiz ini? Kemajuan anda tidak akan disimpan.")) {
+                showScreen('main-menu');
+            }
+        }
+
+        function retryQuiz() {
+            startQuiz(currentLevel);
+        }
+
+
+        /* =========================================================
+           KEPUTUSAN DAN KEMAJUAN SCREEN RENDERER
+           ========================================================= */
+        function showResultsScreen() {
+            showScreen('results');
+
+            const masteryPercentage = Math.round((correctAnswersCount / 10) * 100);
+            const calculatedXP = score + (correctAnswersCount * 5);
+
+            // Update student total XP & Badge status
+            studentProfile.totalXP += calculatedXP;
+            if (studentProfile.totalXP >= 300) {
+                studentProfile.badge = "Pakar Tajwid 🥇";
+            } else if (studentProfile.totalXP >= 150) {
+                studentProfile.badge = "Wira Tajwid 🥈";
+            } else {
+                studentProfile.badge = "Penjelajah Tajwid 🥉";
+            }
+
+            document.getElementById('res-student-name').innerText = studentProfile.name;
+            document.getElementById('res-score').innerText = score;
+            document.getElementById('res-correct').innerText = `${correctAnswersCount} / 10`;
+            document.getElementById('res-attempts').innerText = totalAttempts;
+            document.getElementById('res-mastery').innerText = `${masteryPercentage}%`;
+            document.getElementById('res-xp').innerText = `+${calculatedXP} XP`;
+
+            let badgeName = "Pelajar Tajwid 🎓";
+            if (masteryPercentage === 100) badgeName = "Pakar Tajwid 🥇";
+            else if (masteryPercentage >= 80) badgeName = "Wira Tajwid 🥈";
+            else if (masteryPercentage >= 50) badgeName = "Penjelajah Tajwid 🥉";
+            document.getElementById('res-badge').innerText = badgeName;
+
+            const reviewBox = document.getElementById('review-topics-box');
+            const reviewList = document.getElementById('review-topics-list');
+            reviewList.innerHTML = '';
+
+            if (wrongTopics.size > 0) {
+                reviewBox.classList.remove('hidden');
+                wrongTopics.forEach(topicId => {
+                    const topicObj = notaData.find(n => n.id === topicId);
+                    if (topicObj) {
+                        const li = document.createElement('li');
+                        li.innerText = topicObj.title;
+                        reviewList.appendChild(li);
+                    }
+                });
+            } else {
+                reviewBox.classList.add('hidden');
+            }
+
+            const nextBtn = document.getElementById('next-level-btn');
+            if (currentLevel === 1) {
+                nextBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.add('hidden');
+            }
+
+            updateStudentUI();
+        }
+
+
+        /* =========================================================
+           INIT ON WINDOW LOAD
+           ========================================================= */
+        window.onload = function() {
+            updateStudentUI();
+            renderLeaderboard();
+            showScreen('main-menu');
+        };
+    </script>
+</body>
+</html>
